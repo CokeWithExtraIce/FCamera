@@ -1,0 +1,4 @@
+build/
+media/
+config/local_config.h
+.qtcreator/
