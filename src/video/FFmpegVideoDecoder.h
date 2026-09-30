@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QString>
+#include <QImage>
 
 /*
 Context 특정 작업을 수행하는데 필요한 설정, 상태, 관련 정보를 저장한 객체
@@ -29,7 +30,7 @@ public:
     bool open(const QString& filename);
 
     // 첫 번째 VideoFrame 디코딩.
-    bool decodeFirstFrame();
+    QImage decodeFirstFrame();
 
 private:
     // 컨테이너에서 VideoStream 탐색.
@@ -37,6 +38,9 @@ private:
 
     // VideoStream에 맞는 FFmpegDecoder를 준비.
     bool openDecoder();
+
+    // FFmpeg의 AVFrame을 Qt의 QImage로 변환.
+    QImage convertFrameToImage(const AVFrame* frame);
 
 private:
     AVFormatContext* m_formatContext = nullptr;

@@ -1,6 +1,7 @@
 #include "config/local_config.h"
 #include "src/video/FFmpegVideoDecoder.h"
 
+#include <QDebug>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 
@@ -18,9 +19,17 @@ int main(int argc, char *argv[])
 
     // 현재 단계에서는 첫번째 Frame까지만 디코딩하여
     // FFmpeg → Decoder 파이프라인이 정상적으로 동작하는지 확인
-    if (!decoder.decodeFirstFrame()) {
+    QImage firstFrame = decoder.decodeFirstFrame();
+
+    if (firstFrame.isNull()) {
+        qDebug() << "Failed to decode first frame.";
         return -1;
     }
+    // 디코딩된 Frame이 QImage로 정상적으로 변환되었는지 확인
+    qDebug() << "First frame converted to QImage:"
+             << "width =" << firstFrame.width()
+             << "height =" << firstFrame.height()
+             << "format =" << firstFrame.format();
 
     // QML 애플리케이션 실행
     QQmlApplicationEngine engine;

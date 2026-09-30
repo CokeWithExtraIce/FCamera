@@ -5,6 +5,7 @@
 extern "C" {
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
+#include <libswscale/swscale.h>
 }
 
 FFmpegVideoDecoder::FFmpegVideoDecoder()
@@ -167,14 +168,14 @@ bool FFmpegVideoDecoder::openDecoder()
 }
 
 
-bool FFmpegVideoDecoder::decodeFirstFrame()
+QImage FFmpegVideoDecoder::decodeFirstFrame()
 {
     // Decoder가 준비되지 않은 경우 종료
     if (m_formatContext == nullptr ||
         m_codecContext == nullptr ||
         m_packet == nullptr ||
         m_frame == nullptr) {
-        return false;
+        return {};
     }
 
     // 미디어 입력에서 Packet 하나씩 읽기.
@@ -184,37 +185,37 @@ bool FFmpegVideoDecoder::decodeFirstFrame()
         if (m_packet->stream_index == m_videoStreamIndex) {
 
             //VideoPacket을 Decoder에 전달
-            int ret = avcodec_send_packet(
+            int ffmpegResult = avcodec_send_packet(
                 m_codecContext,
                 m_packet
                 );
 
-            if (ret < 0) {
+            if (ffmpegResult < 0) {
                 qDebug() << "Failed to send packet to decoder.";
                 av_packet_unref(m_packet); //AVPacket이 현재 참조중인 압축 데이터의 참조 해제
-                return false;
+                return {};
             }
 
             // Decoder로 처리한 Frame을 가져오기.
-            while (ret >= 0) {
+            while (ffmpegResult >= 0) {
 
-                ret = avcodec_receive_frame(
+                ffmpegResult = avcodec_receive_frame(
                     m_codecContext,
                     m_frame
                     );
 
                 // 아직 Frame을 받을 수 없는 경우
-                if (ret == AVERROR(EAGAIN) || //디코더가에서 출력가능한 완성된 Frame이 없음(새로운 Packet 입력 필요)
-                    ret == AVERROR_EOF) { //더이상 디코딩할 입력이 없다
+                if (ffmpegResult == AVERROR(EAGAIN) || //디코더가 출력가능한 완성된 Frame이 없음(새로운 Packet 입력 필요)
+                    ffmpegResult == AVERROR_EOF) { //더이상 디코딩할 입력이 없다
                     break;
                 }
 
-                if (ret < 0) {
+                if (ffmpegResult < 0) {
                     qDebug()
                     << "Failed to receive frame from decoder.";
 
                     av_packet_unref(m_packet);
-                    return false;
+                    return {};
                 }
 
                 // 첫 번째 VideoFrame 디코딩 성공
@@ -223,9 +224,12 @@ bool FFmpegVideoDecoder::decodeFirstFrame()
                          << "height =" << m_frame->height
                          << "format =" << m_frame->format;
 
+                // FFmpeg의 AVFrame을 Qt에서 사용할 수 있는 QImage로 변환
+                QImage image = convertFrameToImage(m_frame);
+
                 av_packet_unref(m_packet);
 
-                return true;
+                return image;
             }
         }
 
@@ -233,5 +237,84 @@ bool FFmpegVideoDecoder::decodeFirstFrame()
         av_packet_unref(m_packet);
     }
 
-    return false;
+    return {};
+}
+
+QImage FFmpegVideoDecoder::convertFrameToImage(
+    const AVFrame* frame)
+{
+    if (frame == nullptr) {
+        return {};
+    }
+
+    // Qt에서 사용할 RGB 형식의 Image 생성
+    QImage image(
+        frame->width,
+        frame->height,
+        QImage::Format_RGB888
+        );
+
+    if (image.isNull()) {
+        qDebug() << "Failed to create QImage.";
+        return {};
+    }
+
+
+    // swscale : FFmpeg에서 영상의 픽셀 데이터를 변환하는 라이브러리, sw + scale
+    // AVFrame의 픽셀 표현 방식은 YUV, QImage는 RGB
+    // 기호 Y(밝기), U(blue 방향 색차), V(red 방향 색차)
+
+    // FFmpeg Frame의 YUV기반 PixelFormat을
+    // Qt에서 사용할 RGB24 형식으로 변환하기 위한 Context 생성
+    SwsContext* swsContext = sws_getContext(
+        frame->width,
+        frame->height,
+        static_cast<AVPixelFormat>(frame->format),
+
+        frame->width,
+        frame->height,
+        AV_PIX_FMT_RGB24,
+
+        SWS_BILINEAR,
+        nullptr,
+        nullptr,
+        nullptr
+        );
+
+    if (swsContext == nullptr) {
+        qDebug() << "Failed to create SwsContext.";
+        return {};
+    }
+
+    // 변환된 Pixel 데이터를 저장할 QImage의 메모리 주소
+    uint8_t* destinationData[4] = {
+        image.bits(),
+        nullptr,
+        nullptr,
+        nullptr
+    };
+
+    // QImage의 한 줄당 Byte 수
+    int destinationLinesize[4] = {
+        static_cast<int>(image.bytesPerLine()),
+        0,
+        0,
+        0
+    };
+
+    // FFmpeg Frame의 PixelFormat을 RGB24로 변환
+    sws_scale(
+        swsContext,
+        frame->data,
+        frame->linesize,
+        0,
+        frame->height,
+        destinationData,
+        destinationLinesize
+        );
+
+    // PixelFormat 변환에 사용한 Context 해제
+    sws_freeContext(swsContext);
+
+    return image;
 }

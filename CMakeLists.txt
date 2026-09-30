@@ -40,6 +40,7 @@ target_link_libraries(appFCamera PRIVATE
     avcodec
     avformat
     avutil
+    swscale
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
