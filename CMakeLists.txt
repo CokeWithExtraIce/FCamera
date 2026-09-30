@@ -15,6 +15,8 @@ endif()
 
 qt_add_executable(appFCamera
     main.cpp
+    src/video/FFmpegVideoDecoder.cpp
+    src/video/FFmpegVideoDecoder.h
 )
 
 qt_add_qml_module(appFCamera
