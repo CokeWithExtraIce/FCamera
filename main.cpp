@@ -1,5 +1,6 @@
 #include "config/local_config.h"
 #include "src/video/FFmpegVideoDecoder.h"
+#include "src/video/QMLImageProvider.h"
 
 #include <QDebug>
 #include <QGuiApplication>
@@ -32,7 +33,20 @@ int main(int argc, char *argv[])
              << "format =" << firstFrame.format();
 
     // QML 애플리케이션 실행
+
+    //QMLImageProvider imageProvider; //_CrtIsValidHeapPointer(block)
     QQmlApplicationEngine engine;
+    //QMLImageProvider imageProvider; //terminated abnormally
+    QMLImageProvider* imageProvider = new QMLImageProvider;
+
+    // 디코딩한 첫번째 Frame을 Provider에 전달
+    imageProvider->setImage(firstFrame);
+
+    // QMLImageProvider 등록
+    engine.addImageProvider(
+        "videoFrame",
+        imageProvider
+        );
 
     QObject::connect(
         &engine,
