@@ -1,36 +1,18 @@
 #include "config/local_config.h"
-#include "src/video/FFmpegVideoDecoder.h"
+
 #include "src/video/QMLImageProvider.h"
+#include "src/video/VideoFrameUpdater.h"
+#include "src/video/VideoController.h"
 
 #include <QDebug>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QThread>
+#include <QQmlContext>
 
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
-
-    // "FFmpegVideoDecoder.h"
-    FFmpegVideoDecoder decoder;
-
-    // 임시 mp4파일 open
-    if (!decoder.open(SAMPLE_VIDEO_PATH)) {
-        return -1;
-    }
-
-    // 현재 단계에서는 첫번째 Frame까지만 디코딩하여
-    // FFmpeg → Decoder 파이프라인이 정상적으로 동작하는지 확인
-    QImage firstFrame = decoder.decodeFirstFrame();
-
-    if (firstFrame.isNull()) {
-        qDebug() << "Failed to decode first frame.";
-        return -1;
-    }
-    // 디코딩된 Frame이 QImage로 정상적으로 변환되었는지 확인
-    qDebug() << "First frame converted to QImage:"
-             << "width =" << firstFrame.width()
-             << "height =" << firstFrame.height()
-             << "format =" << firstFrame.format();
 
     // QML 애플리케이션 실행
 
@@ -38,16 +20,42 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     //QMLImageProvider imageProvider; //terminated abnormally
     QMLImageProvider* imageProvider = new QMLImageProvider;
-
-    // 디코딩한 첫번째 Frame을 Provider에 전달
-    imageProvider->setImage(firstFrame);
-
+    // ref: https://doc.qt.io/qt-6/ko/qqmlengine.html
     // QMLImageProvider 등록
     engine.addImageProvider(
         "videoFrame",
         imageProvider
         );
 
+
+    // QML에서 Frame 변경을 전달받기 위한 Updater 생성
+    // Updater는 UI Thread에서 동작한다.
+    VideoFrameUpdater* frameUpdater = new VideoFrameUpdater(
+        imageProvider,
+        &engine
+        );
+
+    // QML에서 Updater의 Property를 사용할 수 있도록 등록
+    engine.rootContext()->setContextProperty(
+        "videoFrameUpdater",
+        frameUpdater
+        );
+
+    // Video Worker를 관리하는 Controller
+    VideoController* videoController =
+        new VideoController(
+            &engine
+        );
+
+    // Controller가 전달하는 Frame을 Updater로 전달
+    QObject::connect(
+        videoController,
+        &VideoController::frameReady,
+        frameUpdater,
+        &VideoFrameUpdater::setFrame
+        );
+
+    //QML 객체 생성 실패
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreationFailed,
@@ -57,6 +65,15 @@ int main(int argc, char *argv[])
         },
         Qt::QueuedConnection
         );
+
+    qDebug() << "Starting video thread";
+
+    //videoThread->start(); // controller로 분리
+    // 영상 처리 시작
+    videoController->start(
+        SAMPLE_VIDEO_PATH
+        );
+
     // CMake에서 설정한 URI, QML 타입 입력
     engine.loadFromModule("FCamera", "Main");
 

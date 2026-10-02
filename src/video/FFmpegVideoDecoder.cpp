@@ -168,7 +168,7 @@ bool FFmpegVideoDecoder::openDecoder()
 }
 
 
-QImage FFmpegVideoDecoder::decodeFirstFrame()
+QImage FFmpegVideoDecoder::decodeNextFrame()
 {
     // Decoder가 준비되지 않은 경우 종료
     if (m_formatContext == nullptr ||
@@ -190,9 +190,11 @@ QImage FFmpegVideoDecoder::decodeFirstFrame()
                 m_packet
                 );
 
+            //다음 Packet을 위해 현재 Packet 참조 해제
+            av_packet_unref(m_packet);
+
             if (ffmpegResult < 0) {
                 qDebug() << "Failed to send packet to decoder.";
-                av_packet_unref(m_packet); //AVPacket이 현재 참조중인 압축 데이터의 참조 해제
                 return {};
             }
 
@@ -214,27 +216,27 @@ QImage FFmpegVideoDecoder::decodeFirstFrame()
                     qDebug()
                     << "Failed to receive frame from decoder.";
 
-                    av_packet_unref(m_packet);
                     return {};
                 }
 
-                // 첫 번째 VideoFrame 디코딩 성공
-                qDebug() << "Decoded frame:"
-                         << "width =" << m_frame->width
-                         << "height =" << m_frame->height
-                         << "format =" << m_frame->format;
+                // qDebug() << "Decoded frame:"
+                //          << "width =" << m_frame->width
+                //          << "height =" << m_frame->height
+                //          << "format =" << m_frame->format;
 
+                // VideoFrame 디코딩 성공
                 // FFmpeg의 AVFrame을 Qt에서 사용할 수 있는 QImage로 변환
                 QImage image = convertFrameToImage(m_frame);
-
-                av_packet_unref(m_packet);
-
+                if (image.isNull()){
+                    qDebug() << "Failed to conver frame to QImage";
+                    return {};
+                }
                 return image;
             }
+        } else {
+            //VideoStream이 아닌 Packet은 사용하지 않음
+            av_packet_unref(m_packet);
         }
-
-        // 다음 Packet을 읽기 위해 현재 Packet의 참조 해제
-        av_packet_unref(m_packet);
     }
 
     return {};

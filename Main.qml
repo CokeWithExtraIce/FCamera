@@ -17,9 +17,13 @@ ApplicationWindow {
     property color light: "#e0e0e0"
 
     Image {
+        id: viddeoImage
         anchors.fill: parent
 
         source: "image://videoFrame/frame"
+                + videoFrameUpdater.frameVersion
         fillMode: Image.PreserveAspectFit
+
+        cache: false //이전 프레임 캐싱 - 재사용 벙지
     }
 }

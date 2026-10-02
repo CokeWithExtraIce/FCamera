@@ -19,6 +19,13 @@ qt_add_executable(appFCamera
     src/video/FFmpegVideoDecoder.h
     src/video/QMLImageProvider.cpp
     src/video/QMLImageProvider.h
+    src/video/VideoWorker.cpp
+    src/video/VideoWorker.h
+    src/video/VideoFrameUpdater.cpp
+    src/video/VideoFrameUpdater.h
+    src/video/VideoController.cpp
+    src/video/VideoController.h
+
 )
 
 qt_add_qml_module(appFCamera

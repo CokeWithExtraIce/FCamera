@@ -1,5 +1,7 @@
 #include "QMLImageProvider.h"
 
+#include <QDebug>
+
 QMLImageProvider::QMLImageProvider()
     : QQuickImageProvider(QQuickImageProvider::Image)
 {
@@ -10,8 +12,9 @@ QImage QMLImageProvider::requestImage(
     QSize* size,
     const QSize& requestedSize)
 {
-    Q_UNUSED(id)
     Q_UNUSED(requestedSize)
+
+    // qDebug() << "QMLImageProvider::requestImage()";
 
     if (size != nullptr) {
         *size = m_image.size();
@@ -22,5 +25,7 @@ QImage QMLImageProvider::requestImage(
 
 void QMLImageProvider::setImage(const QImage& image)
 {
+    // qDebug() << "QMLImageProvider::setImage()";
+
     m_image = image;
 }

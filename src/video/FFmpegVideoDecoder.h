@@ -30,7 +30,7 @@ public:
     bool open(const QString& filename);
 
     // 첫 번째 VideoFrame 디코딩.
-    QImage decodeFirstFrame();
+    QImage decodeNextFrame();
 
 private:
     // 컨테이너에서 VideoStream 탐색.
