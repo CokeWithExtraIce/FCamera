@@ -12,6 +12,7 @@ QImage QMLImageProvider::requestImage(
     QSize* size,
     const QSize& requestedSize)
 {
+
     Q_UNUSED(requestedSize)
 
     // qDebug() << "QMLImageProvider::requestImage()";

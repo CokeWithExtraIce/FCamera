@@ -12,9 +12,16 @@ VideoFrameUpdater::VideoFrameUpdater(
 {
 }
 
+//Qt Property에서는 일반적으로 Property이름과 get 함수 이름 똑같이 사용
+// videoFrameUpdater.frameVersion이 아래 함수 호출
 int VideoFrameUpdater::frameVersion() const
 {
     return m_frameVersion;
+}
+
+bool VideoFrameUpdater::hasFrame() const
+{
+    return m_hasFrame;
 }
 
 void VideoFrameUpdater::setFrame(const QImage& image)
@@ -30,6 +37,13 @@ void VideoFrameUpdater::setFrame(const QImage& image)
     // QML이 새로운 Image를 요청하도록 버전 증가
     ++m_frameVersion;
 
+    m_hasFrame = true;
+
+    // qDebug() << "VideoFrameUpdater:"
+    //          << "frameVersion =" << m_frameVersion
+    //          << "hasFrame =" << m_hasFrame;
+
+    emit hasFrameChanged();
     // qDebug() << "frameVersion =" << m_frameVersion;
 
     emit frameVersionChanged();

@@ -14,7 +14,7 @@ AVCodecContext 특정 디코더를 실행하기 위한 상태
 AVPacket FFmpeg가 input에서 읽어온 압축된 미디어 데이터 (압축된 h.264 영상 데이터)
 AVFrame AVPacket등 압축된 데이터를 decoder로 처리한 결과로 출력하는 미디어 데이터(디코딩된 영상 프레임)
 */
-// 전방 선언
+
 struct AVFormatContext;
 struct AVCodecContext;
 struct AVPacket;
@@ -29,7 +29,7 @@ public:
     // 영상 파일을 열고 VideoStream 및 Decoder 준비.
     bool open(const QString& filename);
 
-    // 첫 번째 VideoFrame 디코딩.
+    // 다음 VideoFrame 디코딩.
     QImage decodeNextFrame();
 
 private:

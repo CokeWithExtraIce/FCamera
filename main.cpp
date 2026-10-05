@@ -1,5 +1,9 @@
 #include "config/local_config.h"
 
+#include "src/device/Device.h"
+#include "src/device/DeviceManager.h"
+#include "src/device/input/FileInput.h"
+
 #include "src/video/QMLImageProvider.h"
 #include "src/video/VideoFrameUpdater.h"
 #include "src/video/VideoController.h"
@@ -10,12 +14,14 @@
 #include <QThread>
 #include <QQmlContext>
 
+#include <memory>
+
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
 
-    // QML 애플리케이션 실행
 
+    DeviceManager deviceManager;
     //QMLImageProvider imageProvider; //_CrtIsValidHeapPointer(block)
     QQmlApplicationEngine engine;
     //QMLImageProvider imageProvider; //terminated abnormally
@@ -41,21 +47,42 @@ int main(int argc, char *argv[])
         frameUpdater
         );
 
-    // Video Worker를 관리하는 Controller
+    //device
+    auto fileInput =
+        std::make_unique<FileInput>(
+            SAMPLE_VIDEO_PATH
+            );
+
+    auto device =
+        std::make_unique<Device>(
+            1,
+            std::move(fileInput)
+            );
+
+    if (!deviceManager.addDevice(
+            std::move(device))) {
+
+        qDebug() << "Failed to register device.";
+
+        return -1;
+    }
+
+    qDebug() << "Registered devices:"
+             << deviceManager.deviceCount();
+
+    // Controller -> Updater (Frame)
     VideoController* videoController =
         new VideoController(
+            &deviceManager,
             &engine
-        );
-
-    // Controller가 전달하는 Frame을 Updater로 전달
-    QObject::connect(
+            );    QObject::connect(
         videoController,
         &VideoController::frameReady,
         frameUpdater,
         &VideoFrameUpdater::setFrame
         );
 
-    //QML 객체 생성 실패
+    // QML 객체 생성 실패
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreationFailed,
@@ -68,11 +95,8 @@ int main(int argc, char *argv[])
 
     qDebug() << "Starting video thread";
 
-    //videoThread->start(); // controller로 분리
-    // 영상 처리 시작
-    videoController->start(
-        SAMPLE_VIDEO_PATH
-        );
+    // Device ID 1번 영상 처리 시작
+    videoController->start(1);
 
     // CMake에서 설정한 URI, QML 타입 입력
     engine.loadFromModule("FCamera", "Main");

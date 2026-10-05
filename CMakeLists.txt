@@ -15,6 +15,18 @@ endif()
 
 qt_add_executable(appFCamera
     main.cpp
+    # Device
+    src/device/Device.cpp
+    src/device/Device.h
+    src/device/DeviceManager.cpp
+    src/device/DeviceManager.h
+    # Device Input
+    src/device/input/DeviceInput.h
+    src/device/input/FileInput.cpp
+    src/device/input/FileInput.h
+    src/device/input/WebcamInput.cpp
+    src/device/input/WebcamInput.h
+    # Video
     src/video/FFmpegVideoDecoder.cpp
     src/video/FFmpegVideoDecoder.h
     src/video/QMLImageProvider.cpp

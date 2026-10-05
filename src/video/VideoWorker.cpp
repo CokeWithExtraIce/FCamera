@@ -1,39 +1,44 @@
 #include "VideoWorker.h"
 
+#include "../device/Device.h"
+
 #include <QDebug>
 
-VideoWorker::VideoWorker(QObject* parent)
-    : QObject(parent)
+VideoWorker::VideoWorker(
+    Device* device,
+    QObject* parent)
+    : QObject(parent),
+    m_device(device)
 {
 }
 
-void VideoWorker::start(const QString& filename)
+void VideoWorker::start()
 {
-    qDebug() << "VideoWorker::start()"
-             << "filename =" << filename;
-
-    // 영상 파일 및 Decoder 준비
-    // FFmpegVideoDecoder
-    if (!m_decoder.open(filename)) {
-        qDebug() << "Failed to open video.";
+    if (m_device == nullptr) {
+        qDebug() << "VideoWorker has no device.";
 
         emit finished();
         return;
     }
 
-    // 영상을 Frame 단위로 계속 디코딩
+    qDebug() << "VideoWorker::start()"
+             << "deviceId =" << m_device->id();
+
+    if (!m_device->open()) {
+        qDebug() << "Failed to open device."
+                 << "deviceId =" << m_device->id();
+
+        emit finished();
+        return;
+    }
+
     while (true) {
+        QImage frame = m_device->readFrame();
 
-        QImage frame = m_decoder.decodeNextFrame();
-
-        // 더 이상 디코딩할 Frame이 없는 경우 종료
         if (frame.isNull()) {
             break;
         }
 
-        // qDebug() << "VideoWorker: frameReady";
-
-        // 디코딩된 Frame을 다른 객체로 전달
         emit frameReady(frame);
     }
 

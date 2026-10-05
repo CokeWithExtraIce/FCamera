@@ -26,14 +26,14 @@ bool FFmpegVideoDecoder::open(const QString& filename)
     const QByteArray path = filename.toLocal8Bit();
 
     // 미디어 컨테이너 열기 및 FormatContext 생성
-    int ret = avformat_open_input(
+    int ffmpegResult = avformat_open_input(
         &m_formatContext,
         path.constData(),
         nullptr,
         nullptr
         );
 
-    if (ret < 0) {
+    if (ffmpegResult < 0) {
         qDebug() << "Failed to open video:" << filename;
         return false;
     }
@@ -41,12 +41,12 @@ bool FFmpegVideoDecoder::open(const QString& filename)
     qDebug() << "Video opened successfully:" << filename;
 
     // 컨테이너의 Stream 정보 탐색
-    ret = avformat_find_stream_info(
+    ffmpegResult = avformat_find_stream_info(
         m_formatContext,
         nullptr
         );
 
-    if (ret < 0) {
+    if (ffmpegResult < 0) {
         qDebug() << "Failed to find stream information.";
         return false;
     }
@@ -116,8 +116,7 @@ bool FFmpegVideoDecoder::openDecoder()
     AVCodecParameters* codecParameters =
         videoStream->codecpar;
 
-    qDebug() << "Video codec ID:"
-             << codecParameters->codec_id;
+    // qDebug() << "Video codec ID:" << codecParameters->codec_id;
 
     // Codec ID에 맞는 Decoder 탐색
     const AVCodec* codec =
@@ -128,8 +127,7 @@ bool FFmpegVideoDecoder::openDecoder()
         return false;
     }
 
-    qDebug() << "Video decoder found:"
-             << codec->name;
+    // qDebug() << "Video decoder found:" << codec->name;
 
     // Decoder 실행을 위한 CodecContext 생성
     m_codecContext = avcodec_alloc_context3(codec);
@@ -140,24 +138,24 @@ bool FFmpegVideoDecoder::openDecoder()
     }
 
     // Stream의 CodecParameters를 DecoderContext에 복사
-    int ret = avcodec_parameters_to_context(
+    int ffmpegResult = avcodec_parameters_to_context(
         m_codecContext,
         codecParameters
         );
 
-    if (ret < 0) {
+    if (ffmpegResult < 0) {
         qDebug() << "Failed to copy codec parameters.";
         return false;
     }
 
     // Decoder 실행 준비
-    ret = avcodec_open2(
+    ffmpegResult = avcodec_open2(
         m_codecContext,
         codec,
         nullptr
         );
 
-    if (ret < 0) {
+    if (ffmpegResult < 0) {
         qDebug() << "Failed to open video decoder.";
         return false;
     }

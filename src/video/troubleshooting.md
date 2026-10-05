@@ -1,3 +1,5 @@
+## 1. Qt의 Ownership
+
 ### 일자: 2026 10 01
 
 ### 관련 파일: main.cpp
@@ -44,3 +46,5 @@ provider가 engine보다 아래에서 stack으로 선언된 경우, 소유권을
 
 ### 문제 해결
 new를 통해 provider 객체를 동적으로 할당하면 cpp에서 소멸자가 호출되지 않기에 Qt로 안전하게 소유권이 이전되며, heap pointer 검사도 문제없이 통과합니다.
+
+

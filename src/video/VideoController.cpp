@@ -1,18 +1,51 @@
 #include "VideoController.h"
 
+#include "../device/Device.h"
+#include "../device/DeviceManager.h"
 #include "VideoWorker.h"
 
-VideoController::VideoController(QObject* parent)
-    : QObject(parent)
-{
-    // 영상 처리를 담당할 Worker 생성
-    m_worker = new VideoWorker;
+#include <QDebug>
 
-    // Worker를 별도 Thread로 이동
+VideoController::VideoController(
+    DeviceManager* deviceManager,
+    QObject* parent)
+    : QObject(parent),
+    m_deviceManager(deviceManager)
+{
+}
+
+VideoController::~VideoController()
+{
+    m_workerThread.quit();
+    m_workerThread.wait();
+}
+
+void VideoController::start(int deviceId)
+{
+    if (m_deviceManager == nullptr) {
+        qDebug() << "VideoController has no DeviceManager.";
+
+        return;
+    }
+
+    Device* device =
+        m_deviceManager->findDevice(deviceId);
+
+    if (device == nullptr) {
+        qDebug() << "Device not found:"
+                 << deviceId;
+
+        return;
+    }
+
+    qDebug() << "VideoController::start()"
+             << "deviceId =" << deviceId;
+
+    // worker
+    m_worker = new VideoWorker(device);
+
     m_worker->moveToThread(&m_workerThread);
 
-    // Controller → Worker
-    // startRequested가 발생하면 Worker의 start() 실행
     connect(
         this,
         &VideoController::startRequested,
@@ -20,8 +53,6 @@ VideoController::VideoController(QObject* parent)
         &VideoWorker::start
         );
 
-    // Worker → Controller -> FrameUpdater
-    // Worker의 캡슐화(은닉)와 Controller 의존성 분리 with FrameUpdate
     connect(
         m_worker,
         &VideoWorker::frameReady,
@@ -29,7 +60,6 @@ VideoController::VideoController(QObject* parent)
         &VideoController::frameReady
         );
 
-    // Worker의 영상 처리가 끝나면 Thread 종료
     connect(
         m_worker,
         &VideoWorker::finished,
@@ -37,7 +67,6 @@ VideoController::VideoController(QObject* parent)
         &QThread::quit
         );
 
-    // Thread가 종료되면 Worker 삭제
     connect(
         &m_workerThread,
         &QThread::finished,
@@ -45,20 +74,7 @@ VideoController::VideoController(QObject* parent)
         &QObject::deleteLater
         );
 
-    // Worker Thread 시작
     m_workerThread.start();
-}
 
-VideoController::~VideoController()
-{
-    // Worker Thread의 Event Loop 종료
-    m_workerThread.quit();
-
-    // Thread가 완전히 종료될 때까지 대기
-    m_workerThread.wait();
-}
-
-void VideoController::start(const QString& filename)
-{
-    emit startRequested(filename);
+    emit startRequested();
 }

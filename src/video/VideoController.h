@@ -4,7 +4,7 @@
 #include <QImage>
 #include <QThread>
 
-//https://doc.qt.io/qt-6/qthread.html
+class DeviceManager;
 class VideoWorker;
 
 class VideoController : public QObject
@@ -12,20 +12,26 @@ class VideoController : public QObject
     Q_OBJECT
 
 public:
-    explicit VideoController(QObject* parent = nullptr);
+    explicit VideoController(
+        DeviceManager* deviceManager,
+        QObject* parent = nullptr
+        );
+
     ~VideoController();
 
 public slots:
-    void start(const QString& filename);
+    void start(int deviceId);
 
 signals:
     // Worker에게 영상 처리를 시작하도록 요청
-    void startRequested(const QString& filename);
+    void startRequested();
 
-    // Worker가 생성한 Frame을 외부로 전달
+    // Worker가 생성한 Frame을 VideoFrameUpdater로 전달
     void frameReady(const QImage& image);
 
 private:
+    DeviceManager* m_deviceManager = nullptr;
+
     QThread m_workerThread;
     VideoWorker* m_worker = nullptr;
 };

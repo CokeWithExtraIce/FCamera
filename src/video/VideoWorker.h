@@ -2,25 +2,26 @@
 
 #include <QObject>
 #include <QImage>
-#include <QString>
 
-#include "FFmpegVideoDecoder.h"
+class Device;
 
-//https://doc.qt.io/qt-6/qthread.html
 class VideoWorker : public QObject
 {
     Q_OBJECT
 
 public:
-    explicit VideoWorker(QObject* parent = nullptr);
+    explicit VideoWorker(
+        Device* device,
+        QObject* parent = nullptr
+        );
 
 public slots:
-    void start(const QString& filename);
+    void start();
 
 signals:
     void frameReady(const QImage& image);
     void finished();
 
 private:
-    FFmpegVideoDecoder m_decoder;
+    Device* m_device = nullptr;
 };
