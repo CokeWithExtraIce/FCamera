@@ -2,6 +2,7 @@
 
 #include "../device/Device.h"
 
+#include<QDateTime>
 #include <QDebug>
 
 VideoWorker::VideoWorker(
@@ -33,12 +34,15 @@ void VideoWorker::start()
     }
 
     while (true) {
-        QImage frame = m_device->readFrame();
+        QImage image = m_device->readFrame();
 
-        if (frame.isNull()) {
+        if (image.isNull()) {
             break;
         }
-
+        VideoFrame frame;
+        frame.deviceId = m_device->id();
+        frame.image = image;
+        frame.timestamp = QDateTime::currentMSecsSinceEpoch();
         emit frameReady(frame);
     }
 

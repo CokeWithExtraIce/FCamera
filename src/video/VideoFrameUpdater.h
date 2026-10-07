@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QObject>
-#include <QImage>
+#include "../data/VideoFrame.h"
 
 class QMLImageProvider;
 
@@ -32,7 +32,7 @@ public:
     bool hasFrame() const;
 
 public slots:
-    void setFrame(const QImage& image);
+    void setFrame(const VideoFrame& frame);
 
 signals:
     void frameVersionChanged();

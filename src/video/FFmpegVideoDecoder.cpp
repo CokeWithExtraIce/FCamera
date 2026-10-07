@@ -26,6 +26,7 @@ bool FFmpegVideoDecoder::open(const QString& filename)
     const QByteArray path = filename.toLocal8Bit();
 
     // 미디어 컨테이너 열기 및 FormatContext 생성
+    // url로 지정된 실제 입력 소스 자체를 열고 읽는 함수
     int ffmpegResult = avformat_open_input(
         &m_formatContext,
         path.constData(),

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <QObject>
-#include <QImage>
 #include <QThread>
+#include "../data/VideoFrame.h"
 
 class DeviceManager;
 class VideoWorker;
@@ -27,7 +27,7 @@ signals:
     void startRequested();
 
     // Worker가 생성한 Frame을 VideoFrameUpdater로 전달
-    void frameReady(const QImage& image);
+    void frameReady(const VideoFrame& image);
 
 private:
     DeviceManager* m_deviceManager = nullptr;

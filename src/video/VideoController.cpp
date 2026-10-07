@@ -1,10 +1,10 @@
 #include "VideoController.h"
-
 #include "../device/Device.h"
 #include "../device/DeviceManager.h"
 #include "VideoWorker.h"
 
 #include <QDebug>
+#include <QMetaType>
 
 VideoController::VideoController(
     DeviceManager* deviceManager,
@@ -12,6 +12,7 @@ VideoController::VideoController(
     : QObject(parent),
     m_deviceManager(deviceManager)
 {
+    qRegisterMetaType<VideoFrame>("VideoFrame");
 }
 
 VideoController::~VideoController()

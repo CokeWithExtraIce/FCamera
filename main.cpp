@@ -11,10 +11,14 @@
 #include <QDebug>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include <QThread>
 #include <QQmlContext>
 
 #include <memory>
+
+// #include<QFileInfo>
+
+//샘플 영상등록(임시 함수)
+bool registerFileDevice(DeviceManager& deviceManager, int deviceId, const QString& filePath);
 
 int main(int argc, char *argv[])
 {
@@ -22,12 +26,9 @@ int main(int argc, char *argv[])
 
 
     DeviceManager deviceManager;
-    //QMLImageProvider imageProvider; //_CrtIsValidHeapPointer(block)
     QQmlApplicationEngine engine;
-    //QMLImageProvider imageProvider; //terminated abnormally
     QMLImageProvider* imageProvider = new QMLImageProvider;
-    // ref: https://doc.qt.io/qt-6/ko/qqmlengine.html
-    // QMLImageProvider 등록
+
     engine.addImageProvider(
         "videoFrame",
         imageProvider
@@ -35,7 +36,7 @@ int main(int argc, char *argv[])
 
 
     // QML에서 Frame 변경을 전달받기 위한 Updater 생성
-    // Updater는 UI Thread에서 동작한다.
+    // Updater는 UI Thread에서 동작.
     VideoFrameUpdater* frameUpdater = new VideoFrameUpdater(
         imageProvider,
         &engine
@@ -47,28 +48,23 @@ int main(int argc, char *argv[])
         frameUpdater
         );
 
-    //device
-    auto fileInput =
-        std::make_unique<FileInput>(
-            SAMPLE_VIDEO_PATH
-            );
 
-    auto device =
-        std::make_unique<Device>(
-            1,
-            std::move(fileInput)
-            );
+    //샘플 영상 등록
 
-    if (!deviceManager.addDevice(
-            std::move(device))) {
+    for (int i = 0; i < SAMPLE_VIDEO_COUNT; ++i) {
+        if (!registerFileDevice(
+                deviceManager,
+                i + 1,
+                SAMPLE_VIDEO_PATHS[i])) {
 
-        qDebug() << "Failed to register device.";
+            qDebug() << "Failed to register device:"
+                     << i + 1;
 
-        return -1;
+            return -1;
+        }
     }
 
-    qDebug() << "Registered devices:"
-             << deviceManager.deviceCount();
+
 
     // Controller -> Updater (Frame)
     VideoController* videoController =
@@ -102,4 +98,22 @@ int main(int argc, char *argv[])
     engine.loadFromModule("FCamera", "Main");
 
     return app.exec();
+}
+
+bool registerFileDevice(DeviceManager& deviceManager, int deviceId, const QString& filePath){
+
+    std::unique_ptr<FileInput> fileInput =
+        std::make_unique<FileInput>(
+            filePath
+            );
+
+    std::unique_ptr<Device> fileDevice =
+        std::make_unique<Device>(
+            deviceId,
+            std::move(fileInput)
+            );
+
+    return deviceManager.addDevice(
+        std::move(fileDevice)
+        );
 }

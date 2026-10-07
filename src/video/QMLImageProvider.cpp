@@ -15,7 +15,10 @@ QImage QMLImageProvider::requestImage(
 
     Q_UNUSED(requestedSize)
 
-    // qDebug() << "QMLImageProvider::requestImage()";
+    // qDebug() << "QMLImageProvider::requestImage()"
+    //          << "id =" << id
+    //          << "size =" << m_image.size()
+    //          << "isNull =" << m_image.isNull();
 
     if (size != nullptr) {
         *size = m_image.size();

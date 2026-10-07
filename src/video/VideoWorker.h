@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QObject>
-#include <QImage>
+#include "../data/VideoFrame.h"
 
 class Device;
 
@@ -19,7 +19,7 @@ public slots:
     void start();
 
 signals:
-    void frameReady(const QImage& image);
+    void frameReady(const VideoFrame& frame);
     void finished();
 
 private:

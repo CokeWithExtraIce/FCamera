@@ -27,8 +27,7 @@ public:
     ~FFmpegVideoDecoder();
 
     // 영상 파일을 열고 VideoStream 및 Decoder 준비.
-    bool open(const QString& filename);
-
+    bool open(const QString& filename);  
     // 다음 VideoFrame 디코딩.
     QImage decodeNextFrame();
 
