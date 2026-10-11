@@ -37,8 +37,16 @@ qt_add_executable(appFCamera
     src/video/VideoFrameUpdater.h
     src/video/VideoController.cpp
     src/video/VideoController.h
-    #data
+
+    # Display
+    src/display/DisplayCell.h
+    src/display/DisplayCell.cpp
+    src/display/DisplayManager.h
+    src/display/DisplayManager.cpp
+
+    # Data
     src/data/VideoFrame.h
+    src/data/FixedDeviceSelection.h
 
 )
 

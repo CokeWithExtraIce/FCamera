@@ -1,7 +1,7 @@
 #include "FFmpegVideoDecoder.h"
 
 #include <QDebug>
-
+#include <Qthread>
 extern "C" {
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
@@ -237,7 +237,7 @@ QImage FFmpegVideoDecoder::decodeNextFrame()
             av_packet_unref(m_packet);
         }
     }
-
+    // QThread::msleep(30);
     return {};
 }
 

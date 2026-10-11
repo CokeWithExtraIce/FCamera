@@ -2,8 +2,11 @@
 
 #include "../device/Device.h"
 
-#include<QDateTime>
+#include <QDateTime>
 #include <QDebug>
+#include <QThread>
+
+#include <QElapsedTimer>
 
 VideoWorker::VideoWorker(
     Device* device,
@@ -15,9 +18,14 @@ VideoWorker::VideoWorker(
 
 void VideoWorker::start()
 {
+    QElapsedTimer timer;
+    timer.start();
+
+    int frameCount = 0;
+    bool countFinished = false;
+
     if (m_device == nullptr) {
         qDebug() << "VideoWorker has no device.";
-
         emit finished();
         return;
     }
@@ -33,9 +41,14 @@ void VideoWorker::start()
         return;
     }
 
-    while (true) {
+    QThread* currentThread = QThread::currentThread();
+
+    while (!currentThread->isInterruptionRequested()) {
         QImage image = m_device->readFrame();
 
+        if (currentThread->isInterruptionRequested()) {
+            break;
+        }
         if (image.isNull()) {
             break;
         }
@@ -44,7 +57,23 @@ void VideoWorker::start()
         frame.image = image;
         frame.timestamp = QDateTime::currentMSecsSinceEpoch();
         emit frameReady(frame);
-    }
+
+        // 프레임체크
+        if (!countFinished) {
+            if (timer.elapsed() < 10000) {
+                ++frameCount;
+            } else {
+                qDebug() << "Device ID:" << m_device->id()
+                << "| Frames in first 10 seconds:" << frameCount;
+
+                countFinished = true;
+            }}
+
+        QThread::msleep(30);
+        }
+
+    qDebug() << "VideoWorker stopped."
+             << "deviceId =" << m_device->id();
 
     emit finished();
 }

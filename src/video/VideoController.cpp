@@ -4,7 +4,7 @@
 #include "VideoWorker.h"
 
 #include <QDebug>
-#include <QMetaType>
+// #include <QMetaType>
 
 VideoController::VideoController(
     DeviceManager* deviceManager,
@@ -12,13 +12,38 @@ VideoController::VideoController(
     : QObject(parent),
     m_deviceManager(deviceManager)
 {
-    qRegisterMetaType<VideoFrame>("VideoFrame");
+    // qRegisterMetaType<VideoFrame>("VideoFrame");
 }
 
 VideoController::~VideoController()
 {
-    m_workerThread.quit();
-    m_workerThread.wait();
+    auto it = m_workerThreads.constBegin();
+
+    while (it != m_workerThreads.constEnd()) {
+        QThread* thread = it.value();
+
+        if (thread != nullptr) {
+            thread->requestInterruption();
+            thread->quit();
+            // thread->wait();
+        }
+
+        ++it;
+    }
+
+    // 모든 워커 스레드가 종료될 때까지 대기
+    it = m_workerThreads.constBegin();
+
+    while (it != m_workerThreads.constEnd()) {
+        QThread* thread = it.value();
+
+        if (thread != nullptr) {
+            thread->wait();
+        }
+
+        ++it;
+    }
+    qDebug() << "All worker threads stopped.";
 }
 
 void VideoController::start(int deviceId)
@@ -29,13 +54,17 @@ void VideoController::start(int deviceId)
         return;
     }
 
+    if(m_workerThreads.contains(deviceId)){
+        qDebug() << "VideoWorker already started:" << deviceId;
+        return;
+    }
+
     Device* device =
         m_deviceManager->findDevice(deviceId);
 
     if (device == nullptr) {
         qDebug() << "Device not found:"
                  << deviceId;
-
         return;
     }
 
@@ -43,39 +72,52 @@ void VideoController::start(int deviceId)
              << "deviceId =" << deviceId;
 
     // worker
-    m_worker = new VideoWorker(device);
+    // m_worker = new VideoWorker(device);
 
-    m_worker->moveToThread(&m_workerThread);
+    // m_worker->moveToThread(&m_workerThread);
+    QThread* workerThread = new QThread(this);
+    VideoWorker* worker =
+        new VideoWorker(device);
+
+    worker->moveToThread(workerThread);
 
     connect(
-        this,
-        &VideoController::startRequested,
-        m_worker,
+        workerThread,
+        &QThread::started,
+        worker,
         &VideoWorker::start
         );
 
     connect(
-        m_worker,
+        worker,
         &VideoWorker::frameReady,
         this,
         &VideoController::frameReady
         );
 
     connect(
-        m_worker,
+        worker,
         &VideoWorker::finished,
-        &m_workerThread,
+        workerThread,
         &QThread::quit
         );
 
     connect(
-        &m_workerThread,
+        workerThread,
         &QThread::finished,
-        m_worker,
+        worker,
         &QObject::deleteLater
         );
 
-    m_workerThread.start();
+    m_workerThreads.insert(
+        deviceId,
+        workerThread
+        );
 
-    emit startRequested();
+    m_workers.insert(
+        deviceId,
+        worker
+        );
+
+    workerThread->start();
 }

@@ -1,6 +1,9 @@
 #include "QMLImageProvider.h"
-
+#include <QMutexLocker>
 #include <QDebug>
+
+// QHash<int, QImage> m_images;
+// mutable QMutex m_mutex;
 
 QMLImageProvider::QMLImageProvider()
     : QQuickImageProvider(QQuickImageProvider::Image)
@@ -15,21 +18,39 @@ QImage QMLImageProvider::requestImage(
 
     Q_UNUSED(requestedSize)
 
-    // qDebug() << "QMLImageProvider::requestImage()"
-    //          << "id =" << id
-    //          << "size =" << m_image.size()
-    //          << "isNull =" << m_image.isNull();
+    // 이미지 URL의 첫 번째 경로 요소를 cellId로 사용한다.
+    // 예: image://videoFrame/0/15 -> display ID 0
+    const QString cellIdText = id.section('/', 0, 0);
 
-    if (size != nullptr) {
-        *size = m_image.size();
+    bool conversionSucceeded = false;
+    const int cellId = cellIdText.toInt(&conversionSucceeded);
+
+    if (!conversionSucceeded) {
+        if (size != nullptr) {
+            *size = QSize();
+        }
+        return {};
     }
 
-    return m_image;
+    QImage image;
+
+    {QMutexLocker locker(&m_mutex);//lock
+        image = m_images.value(cellId);
+    }//unlock
+
+    if (size != nullptr) {
+        *size = image.size();
+    }
+
+    return image;
+
 }
 
-void QMLImageProvider::setImage(const QImage& image)
+void QMLImageProvider::setImage(
+    int cellId,
+    const QImage& image)
 {
     // qDebug() << "QMLImageProvider::setImage()";
-
-    m_image = image;
+    QMutexLocker locker(&m_mutex);
+    m_images.insert(cellId, image);
 }

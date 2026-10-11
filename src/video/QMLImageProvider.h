@@ -1,6 +1,8 @@
 #pragma once
 
 #include <QImage>
+#include <QHash>
+#include <QMutex>
 #include <QQuickImageProvider>
 
 class QMLImageProvider : public QQuickImageProvider
@@ -14,8 +16,10 @@ public:
         const QSize& requestedSize
         ) override;
 
-    void setImage(const QImage& image);
+    // 화면 영역 식별 1~4 : cellId
+    void setImage(int cellId, const QImage& image);
 
 private:
-    QImage m_image;
+    QHash<int, QImage> m_images;
+    mutable QMutex m_mutex;
 };

@@ -16,30 +16,36 @@ class VideoFrameUpdater : public QObject
     )
 
     Q_PROPERTY(
-        bool hasFrame
-        READ hasFrame
-        NOTIFY hasFrameChanged
+        bool streamingInit
+        READ streamingInit
+        NOTIFY streamingInitChanged
     )
 
-
+    Q_PROPERTY(
+        int cellId
+        READ cellId
+        CONSTANT
+    )
 public:
     explicit VideoFrameUpdater(
+        int cellId,
         QMLImageProvider* imageProvider,
         QObject* parent = nullptr
         );
-
+    int cellId() const;
     int frameVersion() const;
-    bool hasFrame() const;
+    bool streamingInit() const;
 
 public slots:
-    void setFrame(const VideoFrame& frame);
+    void setFrame(int cellId, const VideoFrame& frame);
 
 signals:
     void frameVersionChanged();
-    void hasFrameChanged();
+    void streamingInitChanged();
 
 private:
+    int m_cellId = -1;
     QMLImageProvider* m_imageProvider = nullptr;
     int m_frameVersion = 0;
-    bool m_hasFrame = false;
+    bool m_streamingInit = false;
 };
