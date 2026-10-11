@@ -21,6 +21,8 @@ public:
 
     const DisplayCell* cell(int cellId) const;
 
+    void setScheduledDevices(const QList<int>& deviceIds);
+
 public slots:
     void processFrame(const VideoFrame& frame);
 

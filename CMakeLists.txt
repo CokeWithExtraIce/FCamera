@@ -44,6 +44,14 @@ qt_add_executable(appFCamera
     src/display/DisplayManager.h
     src/display/DisplayManager.cpp
 
+    # Detection
+    src/detection/ObjectDetectionMock.h
+    src/detection/ObjectDetectionMock.cpp
+
+    # Scheduling
+    src/scheduler/SchedulingAlgorithm.h
+    src/scheduler/SchedulingAlgorithm.cpp
+
     # Data
     src/data/VideoFrame.h
     src/data/FixedDeviceSelection.h

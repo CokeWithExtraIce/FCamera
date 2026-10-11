@@ -18,7 +18,10 @@
 #include "src/data/FixedDeviceSelection.h"
 #include "src/display/DisplayManager.h"
 
-//샘플 영상등록(임시 함수)
+#include "src/detection/ObjectDetectionMock.h"
+#include "src/scheduler/SchedulingAlgorithm.h"
+
+// 샘플 영상등록(임시 함수)
 bool registerFileDevice(DeviceManager& deviceManager, int deviceId, const QString& filePath);
 bool registerSampleDevice(DeviceManager& deviceManager);
 
@@ -37,13 +40,28 @@ int main(int argc, char *argv[])
         imageProvider
         );
 
-    //고정 cell 설정
+    // 고정 cell 설정
     FixedDeviceSelection fixedSelection;
     fixedSelection.firstDeviceId = 1;
     fixedSelection.secondDeviceId = 2;
 
     DisplayManager displayManager(fixedSelection);
 
+    // 스케쥴링
+    ObjectDetectionMock detectionMock;
+    SchedulingAlgorithm schedulingAlgorithm(fixedSelection);
+
+    QObject::connect(
+        &detectionMock,
+        &ObjectDetectionMock::scoresReady,
+        &schedulingAlgorithm,
+        &SchedulingAlgorithm::onScoresReady);
+
+    QObject::connect(
+        &schedulingAlgorithm,
+        &SchedulingAlgorithm::devicesSelected,
+        &displayManager,
+        &DisplayManager::setScheduledDevices);
 
     // QML에서 Frame 변경을 전달받기 위한 Updater 생성
     // Updater는 UI Thread에서 동작.
@@ -150,6 +168,7 @@ int main(int argc, char *argv[])
     // CMake에서 설정한 URI, QML 타입 입력
     engine.loadFromModule("FCamera", "Main");
 
+    detectionMock.start();
     return app.exec();
 }
 
